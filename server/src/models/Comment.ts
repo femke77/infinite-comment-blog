@@ -13,7 +13,7 @@ export interface IComment extends Document {
 const commentSchema = new Schema<IComment>(
     {
         blogId: { type: Schema.Types.ObjectId, ref: 'Blog', required: true }, // Associated blog
-        path: { type: String, required: true }, // Materialized path
+        path: { type: String }, // Materialized path
         content: { type: String, required: true }, 
         author: { type: String, required: true }, 
         dateCreated: {

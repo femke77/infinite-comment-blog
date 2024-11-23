@@ -14,6 +14,7 @@ type Mutation {
   addComment(blogId: ID!, content: String!, author: String!): Comment
   removeBlog(blogId: ID!): Blog
   editBlog(blogId: ID!, title: String!, content: String!): Blog
+  addReply(blogId: ID!, parentCommentId: ID!, content: String!, author: String!): Comment
 }
 
   type User {

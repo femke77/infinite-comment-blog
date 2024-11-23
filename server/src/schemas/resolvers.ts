@@ -39,7 +39,11 @@ const resolvers: IResolvers = {
       args: any
     ): Promise<{ token: string; user: IUserDocument }> => {
       const user = await User.create(args);
-      const token = signToken(user.username, user.email, user._id as Types.ObjectId);
+      const token = signToken(
+        user.username,
+        user.email,
+        user._id as Types.ObjectId
+      );
 
       return { token, user: user as IUserDocument };
     },
@@ -50,14 +54,18 @@ const resolvers: IResolvers = {
       const user = await User.findOne({ email });
 
       if (!user || !(await user.isCorrectPassword(password))) {
-        throw new GraphQLError('Your credentials are incorrect.', {
-            extensions: {
-              code: 'UNAUTHORIZED',
-            },
-          });
+        throw new GraphQLError("Your credentials are incorrect.", {
+          extensions: {
+            code: "UNAUTHORIZED",
+          },
+        });
       }
 
-      const token = signToken(user.username, user.email, user._id as Types.ObjectId);
+      const token = signToken(
+        user.username,
+        user.email,
+        user._id as Types.ObjectId
+      );
       return { token, user: user as IUserDocument };
     },
     addBlog: async (
@@ -72,7 +80,7 @@ const resolvers: IResolvers = {
           { _id: context.user._id },
           { $push: { blogs: newBlog._id } },
           { new: true }
-        )   
+        );
         return newBlog as IBlogDocument;
       }
       throw new GraphQLError("You are not authorized to perform this action.", {
@@ -81,24 +89,65 @@ const resolvers: IResolvers = {
         },
       });
     },
-    addComment: async (parent: any, { blogId, content, author }: { blogId: Types.ObjectId; content: string, author: string}, context: IUserContext): Promise<ICommentDocument | null> => {
+    addComment: async (
+      parent: any,
+      {
+        blogId,
+        content,
+        author,
+      }: { blogId: Types.ObjectId; content: string; author: string },
+      context: IUserContext
+    ): Promise<ICommentDocument | null> => {
       if (context.user) {
         const comment = await Comment.create({
-            blogId,
-            content,
-            author,
-            path: 'null', // Will be updated with the comment's `_id` as the path
-          });
-          comment.path = `${comment._id}`; // Set path to the comment's `_id`
-          await comment.save();
-          return comment as ICommentDocument;
+          blogId,
+          content,
+          author,
+        });
+        comment.path = `${comment._id}`; // Set path to the comment's `_id`
+        await comment.save();
+        return comment as ICommentDocument;
       }
       throw new GraphQLError("You are not authorized to perform this action.", {
         extensions: {
           code: "FORBIDDEN",
         },
       });
-    }
+    },
+    addReply: async (
+      parent: any,
+      {
+        blogId,
+        parentCommentId,
+        content,
+        author,
+      }: {
+        blogId: Types.ObjectId;
+        content: string;
+        author: string;
+        parentCommentId: Types.ObjectId;
+      },
+      context: IUserContext
+    ): Promise<ICommentDocument | null> => {
+      if (context.user) {
+        const parentComment = await Comment.findById(parentCommentId);
+        if (!parentComment) throw new Error("Parent comment not found");
+
+        const reply = await Comment.create({
+          blogId,
+          content,
+          author,
+        });
+        reply.path = `${parentComment.path}/${reply._id}`;
+        await reply.save();
+        return reply as ICommentDocument;
+      }
+      throw new GraphQLError("You are not authorized to perform this action.", {
+        extensions: {
+          code: "FORBIDDEN",
+        },
+      });
+    },
   },
 };
 
