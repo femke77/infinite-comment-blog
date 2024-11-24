@@ -1,6 +1,5 @@
 import type { Request } from 'express';
 import jwt from 'jsonwebtoken';
-import { GraphQLError } from 'graphql';
 import dotenv from 'dotenv';
 import JwtPayload from '../interfaces/JwtPayload';
 import { Types } from 'mongoose';
@@ -35,9 +34,5 @@ export const signToken = (username: string, email: string, _id: Types.ObjectId) 
   return jwt.sign({data: payload}, secretKey, { expiresIn: '2h' });
 };
 
-export class AuthenticationError extends GraphQLError {
-  constructor(message: string) {
-    super(message, undefined, undefined, undefined, ['UNAUTHENTICATED']);
-    Object.defineProperty(this, 'name', { value: 'AuthenticationError' });
-  }
-};
+
+

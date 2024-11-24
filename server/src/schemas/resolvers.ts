@@ -8,6 +8,7 @@ import { signToken } from "../services/auth.js";
 import { GraphQLError } from "graphql";
 import { Types } from "mongoose";
 import { IResolvers } from "@graphql-tools/utils";
+import { IUser } from "../models/User.js";
 
 const forbiddenException = new GraphQLError(
   "You are not authorized to perform this action.",
@@ -39,12 +40,20 @@ const resolvers: IResolvers = {
       throw forbiddenException;
     },
     // return all blogs in order of date created (newest first) w/wout comments - probably want to block query on all blogs with all comments
-    blogs: async (): Promise<IBlogDocument[]> => {
-      return await Blog.find().sort({ dateCreated: -1 }) as IBlogDocument[];
+    blogs: async (
+      _parent: any,
+      _args: any,
+      context: IUserContext  //TODO protect
+    ): Promise<IBlogDocument[]> => {
+      return (await Blog.find().sort({ dateCreated: -1 })) as IBlogDocument[];
     },
-    blog: async (_parent: any, {blogId}): Promise<IBlogDocument | null> => {
-        return await Blog.findById(blogId) as IBlogDocument;
-      }
+    blog: async (
+      _parent: any,
+      { blogId },
+      context: IUserContext // TODO protect
+    ): Promise<IBlogDocument | null> => {
+      return (await Blog.findById(blogId)) as IBlogDocument;
+    },
   },
   Mutation: {
     addUser: async (
@@ -158,12 +167,11 @@ const resolvers: IResolvers = {
     },
   },
   Blog: {
-    comments: async (parent) => {   
-        // `parent` is the current blog, and `parent._id` allows us to get comments for this specific blog.
-        return await Comment.find({ blogId: `${parent._id}`});
-      },
-   
-  }
+    // comments: async (parent) => {
+    //     // `parent` is the current blog, and `parent._id` allows us to get comments for this specific blog.
+    //     return await Comment.find({ blogId: `${parent._id}`}).sort({path: 1});
+    //   },
+  },
 };
 
 export default resolvers;
