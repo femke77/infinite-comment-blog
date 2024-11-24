@@ -4,18 +4,21 @@ const typeDefs = gql`
   type Query {
     me: User
     blogs: [Blog]
-    blog(_id: ID!): Blog
+    blog(blogId: ID!): Blog
   }
 
-type Mutation {
-  addUser(username: String!, email: String!, password: String!): Auth
-  login(email: String!, password: String!): Auth
-  addBlog(blogData: BlogInput): Blog
-  addComment(blogId: ID!, content: String!, author: String!): Comment
-  removeBlog(blogId: ID!): Blog
-  editBlog(blogId: ID!, title: String!, content: String!): Blog
-  addReply(blogId: ID!, parentCommentId: ID!, content: String!, author: String!): Comment
-}
+  type Mutation {
+    addUser(username: String!, email: String!, password: String!): Auth
+    login(email: String!, password: String!): Auth
+    addBlog(blogData: BlogInput): Blog
+    addComment(blogId: ID!, content: String!, author: String!): Comment
+    addReply(
+      blogId: ID!
+      parentCommentId: ID!
+      content: String!
+      author: String!
+    ): Comment
+  }
 
   type User {
     _id: ID
@@ -31,7 +34,8 @@ type Mutation {
     title: String!
     content: String!
     dateCreated: String
-    comments: [Comment] #This is a function that returns an array of comments
+    comments: [Comment]
+    
   }
 
   type Comment {
@@ -40,7 +44,7 @@ type Mutation {
     author: String!
     content: String!
     dateCreated: String
-    path: String # probably can exclude this
+    path: String 
   }
 
   type Auth {
@@ -53,8 +57,6 @@ type Mutation {
     title: String!
     content: String!
   }
-
-
 `;
 
 export default typeDefs;

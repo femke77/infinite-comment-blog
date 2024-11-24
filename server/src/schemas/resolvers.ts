@@ -9,8 +9,18 @@ import { GraphQLError } from "graphql";
 import { Types } from "mongoose";
 import { IResolvers } from "@graphql-tools/utils";
 
+const forbiddenException = new GraphQLError(
+  "You are not authorized to perform this action.",
+  {
+    extensions: {
+      code: "FORBIDDEN",
+    },
+  }
+);
+
 const resolvers: IResolvers = {
   Query: {
+    // get the logged in user including their blogs
     me: async (
       _parent: any,
       _args: any,
@@ -26,12 +36,15 @@ const resolvers: IResolvers = {
 
         return userData as IUserDocument;
       }
-      throw new GraphQLError("You are not authorized to perform this action.", {
-        extensions: {
-          code: "FORBIDDEN",
-        },
-      });
+      throw forbiddenException;
     },
+    // return all blogs in order of date created (newest first) w/wout comments - probably want to block query on all blogs with all comments
+    blogs: async (): Promise<IBlogDocument[]> => {
+      return await Blog.find().sort({ dateCreated: -1 }) as IBlogDocument[];
+    },
+    blog: async (_parent: any, {blogId}): Promise<IBlogDocument | null> => {
+        return await Blog.findById(blogId) as IBlogDocument;
+      }
   },
   Mutation: {
     addUser: async (
@@ -47,6 +60,7 @@ const resolvers: IResolvers = {
 
       return { token, user: user as IUserDocument };
     },
+
     login: async (
       _parent: any,
       { email, password }: { email: string; password: string }
@@ -68,6 +82,8 @@ const resolvers: IResolvers = {
       );
       return { token, user: user as IUserDocument };
     },
+
+    // Add a blog
     addBlog: async (
       _parent: any,
       { blogData }: { blogData: IBlogInput },
@@ -83,14 +99,12 @@ const resolvers: IResolvers = {
         );
         return newBlog as IBlogDocument;
       }
-      throw new GraphQLError("You are not authorized to perform this action.", {
-        extensions: {
-          code: "FORBIDDEN",
-        },
-      });
+      throw forbiddenException;
     },
+
+    // add a comment to a blog
     addComment: async (
-      parent: any,
+      _parent: any,
       {
         blogId,
         content,
@@ -108,14 +122,12 @@ const resolvers: IResolvers = {
         await comment.save();
         return comment as ICommentDocument;
       }
-      throw new GraphQLError("You are not authorized to perform this action.", {
-        extensions: {
-          code: "FORBIDDEN",
-        },
-      });
+      throw forbiddenException;
     },
+
+    // Add a reply to a comment
     addReply: async (
-      parent: any,
+      _parent: any,
       {
         blogId,
         parentCommentId,
@@ -142,13 +154,16 @@ const resolvers: IResolvers = {
         await reply.save();
         return reply as ICommentDocument;
       }
-      throw new GraphQLError("You are not authorized to perform this action.", {
-        extensions: {
-          code: "FORBIDDEN",
-        },
-      });
+      throw forbiddenException;
     },
   },
+  Blog: {
+    comments: async (parent) => {   
+        // `parent` is the current blog, and `parent._id` allows us to get comments for this specific blog.
+        return await Comment.find({ blogId: `${parent._id}`});
+      },
+   
+  }
 };
 
 export default resolvers;
